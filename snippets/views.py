@@ -7,18 +7,9 @@ from rest_framework import permissions
 from snippets.permissions import IsOwnerOrReadOnly
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, action
 from rest_framework import renderers
-
-
-class SnippetList(generics.ListCreateAPIView):
-    queryset = Snippet.objects.all()
-    serializer_class = SnippetSerializer
-    # added to restrict permissions on who can read
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-
-    def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+from rest_framework import viewsets
 
 
 @api_view(['GET'])
@@ -29,22 +20,48 @@ def api_root(request, format=None):
     })
 
 
-class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
+class SnippetViewSet(viewsets.ModelViewSet):
     queryset = Snippet.objects.all()
     serializer_class = SnippetSerializer
-    # added to restrict persmission on who can update, destroy
     permission_classes = [
         permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
 
+    @action(detail=True, rederer_classes=[renderers.StaticHTMLRenderer])
+    def highlight(self, request, *args, **kwargs):
+        snippet = self.get_object()
+        return Response(snippet.highlighted)
 
-class UserList(generics.ListAPIView):
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+
+# class SnippetList(generics.ListCreateAPIView):
+#     queryset = Snippet.objects.all()
+#     serializer_class = SnippetSerializer
+#     # added to restrict permissions on who can read
+#     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+#     def perform_create(self, serializer):
+#         serializer.save(owner=self.request.user)
+# class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Snippet.objects.all()
+#     serializer_class = SnippetSerializer
+#     # added to restrict persmission on who can update, destroy
+#     permission_classes = [
+#         permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+
+
+class UserViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+# class UserList(generics.ListAPIView):
+#     queryset = User.objects.all()
+#     serializer_class = UserSerializer
 
-class UserDetail(generics.RetrieveAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+
+# class UserDetail(generics.RetrieveAPIView):
+#     queryset = User.objects.all()
+#     serializer_class = UserSerializer
 
 
 class SnippetHighlight(generics.GenericAPIView):
